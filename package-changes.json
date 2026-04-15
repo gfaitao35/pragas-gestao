@@ -1,0 +1,23 @@
+{
+  "INSTRUCOES": "Execute: npm uninstall better-sqlite3 electron electron-builder wait-on && npm install @neondatabase/serverless",
+  "dependencias_para_REMOVER": [
+    "better-sqlite3",
+    "electron",
+    "electron-builder", 
+    "wait-on",
+    "open"
+  ],
+  "dependencias_para_ADICIONAR": {
+    "@neondatabase/serverless": "^0.10.4"
+  },
+  "scripts_para_REMOVER": [
+    "copy:static",
+    "dist"
+  ],
+  "scripts_novos": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "comando_completo": "npm uninstall better-sqlite3 electron electron-builder wait-on open && npm install @neondatabase/serverless"
+}
