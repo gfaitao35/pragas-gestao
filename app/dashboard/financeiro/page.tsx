@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db'
+import { query } from '@/lib/db'
 import { getSessionUserId } from '@/lib/session'
 import { redirect } from 'next/navigation'
 import { FinanceiroClient } from '@/components/financeiro/financeiro-client'
@@ -40,21 +40,20 @@ export default async function FinanceiroPage() {
   const userId = await getSessionUserId()
   if (!userId) redirect('/auth/login')
 
-  const database = getDb()
-  const ordensRows = database.prepare('SELECT * FROM ordens_servico WHERE user_id = ? ORDER BY created_at DESC').all(userId) as Record<string, unknown>[]
-  const clientesRows = database.prepare('SELECT * FROM clientes WHERE user_id = ?').all(userId) as Record<string, unknown>[]
+  const ordensRows = await query<Record<string, unknown>>`SELECT * FROM ordens_servico WHERE user_id = ${userId} ORDER BY created_at DESC`
+  const clientesRows = await query<Record<string, unknown>>`SELECT * FROM clientes WHERE user_id = ${userId}`
 
-  const contratosRows = database.prepare(`
+  const contratosRows = await query<any>`
     SELECT c.*, cl.razao_social FROM contratos c
-    LEFT JOIN clientes cl ON c.cliente_id = cl.id WHERE c.user_id = ?
-  `).all(userId) as any[]
+    LEFT JOIN clientes cl ON c.cliente_id = cl.id WHERE c.user_id = ${userId}
+  `
 
-  const parcelasRows = database.prepare(`
+  const parcelasRows = await query<any>`
     SELECT p.*, c.numero_contrato, cl.razao_social as cliente_razao_social
     FROM parcelas p LEFT JOIN contratos c ON p.contrato_id = c.id
     LEFT JOIN clientes cl ON c.cliente_id = cl.id
-    WHERE c.user_id = ? ORDER BY p.data_vencimento ASC
-  `).all(userId) as any[]
+    WHERE c.user_id = ${userId} ORDER BY p.data_vencimento ASC
+  `
 
   const clientesMap = new Map<string, Cliente>()
   for (const r of clientesRows) {

@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db'
+import { queryOne } from '@/lib/db'
 import { getSessionUserId } from '@/lib/session'
 import { redirect } from 'next/navigation'
 import { CertificadoForm } from '@/components/certificados/certificado-form'
@@ -29,12 +29,9 @@ function rowToOrdem(row: Record<string, unknown>, cliente?: Partial<Cliente>): O
     liquidado: (row.liquidado as number) === 1,
     data_liquidacao: (row.data_liquidacao as string) || null,
     valor_pago: (row.valor_pago as number) ?? null,
-
-    // 🔥 ESTES ESTAVAM FALTANDO
     garantia_meses: (row.garantia_meses as number) ?? null,
     visitas_gratuitas: (row.visitas_gratuitas as number) ?? 0,
     contrato_id: (row.contrato_id as string) ?? null,
-
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     user_id: row.user_id as string,
@@ -53,14 +50,13 @@ export default async function NovoCertificadoPage({ searchParams }: Props) {
   const userId = await getSessionUserId()
   if (!userId) redirect('/auth/login')
 
-  const database = getDb()
-  const ordemRow = database.prepare('SELECT * FROM ordens_servico WHERE id = ? AND user_id = ?').get(ordemId, userId) as Record<string, unknown> | undefined
+  const ordemRow = await queryOne<Record<string, unknown>>`SELECT * FROM ordens_servico WHERE id = ${ordemId} AND user_id = ${userId}`
 
   if (!ordemRow) {
     redirect('/dashboard/ordens')
   }
 
-  const clienteRow = database.prepare('SELECT * FROM clientes WHERE id = ?').get(ordemRow.cliente_id) as Record<string, unknown> | undefined
+  const clienteRow = await queryOne<Record<string, unknown>>`SELECT * FROM clientes WHERE id = ${ordemRow.cliente_id}`
   const cliente: Partial<Cliente> | undefined = clienteRow
     ? {
         id: clienteRow.id as string,

@@ -1,20 +1,22 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { getDb } from '@/lib/db'
+import { sql, queryOne } from '@/lib/db'
 import { generateId } from '@/lib/auth'
 import { getSessionUserId } from '@/lib/session'
 import type { StatusOrdemServico } from '@/lib/types'
 
-function generateNumeroOS(database: ReturnType<typeof getDb>, userId: string): string {
+async function generateNumeroOS(userId: string): Promise<string> {
   const now = new Date()
   const ano = now.getFullYear()
   const mes = String(now.getMonth() + 1).padStart(2, '0')
   const prefixo = `${ano}-${mes}-`
 
-  const result = database.prepare(
-    `SELECT numero_os FROM ordens_servico WHERE user_id = ? AND numero_os LIKE ? ORDER BY numero_os DESC LIMIT 1`
-  ).get(userId, `${prefixo}%`) as { numero_os: string } | undefined
+  const result = await queryOne<{ numero_os: string }>`
+    SELECT numero_os FROM ordens_servico 
+    WHERE user_id = ${userId} AND numero_os LIKE ${prefixo + '%'} 
+    ORDER BY numero_os DESC LIMIT 1
+  `
 
   let seq = 1
   if (result) {
@@ -49,26 +51,16 @@ export async function createOrdemAction(data: {
   const userId = await getSessionUserId()
   if (!userId) return { error: 'Usuário não autenticado' }
 
-  const database = getDb()
   const id = generateId()
-  const numero_os = data.numero_os || generateNumeroOS(database, userId)
+  const numero_os = data.numero_os || await generateNumeroOS(userId)
   const numParcelas = data.num_parcelas && data.num_parcelas > 1 ? data.num_parcelas : 1
   const diaVenc = data.dia_vencimento || null
 
   try {
-    database
-      .prepare(
-        `INSERT INTO ordens_servico (id, user_id, cliente_id, numero_os, data_execucao, tipo_servico, descricao_servico, local_execucao, equipamentos_utilizados, produtos_aplicados, area_tratada, pragas_alvo, observacoes, tecnico_responsavel, status, valor, garantia_meses, visitas_gratuitas, num_parcelas, dia_vencimento)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
-        id, userId, data.cliente_id, numero_os, data.data_execucao, data.tipo_servico,
-        data.descricao_servico ?? null, data.local_execucao ?? null,
-        data.equipamentos_utilizados ?? null, data.produtos_aplicados ?? null,
-        data.area_tratada ?? null, data.pragas_alvo ?? null, data.observacoes ?? null,
-        data.tecnico_responsavel ?? null, data.status, data.valor ?? null,
-        data.garantia_meses ?? null, data.visitas_gratuitas ?? 0, numParcelas, diaVenc
-      )
+    await sql`
+      INSERT INTO ordens_servico (id, user_id, cliente_id, numero_os, data_execucao, tipo_servico, descricao_servico, local_execucao, equipamentos_utilizados, produtos_aplicados, area_tratada, pragas_alvo, observacoes, tecnico_responsavel, status, valor, garantia_meses, visitas_gratuitas, num_parcelas, dia_vencimento)
+      VALUES (${id}, ${userId}, ${data.cliente_id}, ${numero_os}, ${data.data_execucao}, ${data.tipo_servico}, ${data.descricao_servico ?? null}, ${data.local_execucao ?? null}, ${data.equipamentos_utilizados ?? null}, ${data.produtos_aplicados ?? null}, ${data.area_tratada ?? null}, ${data.pragas_alvo ?? null}, ${data.observacoes ?? null}, ${data.tecnico_responsavel ?? null}, ${data.status}, ${data.valor ?? null}, ${data.garantia_meses ?? null}, ${data.visitas_gratuitas ?? 0}, ${numParcelas}, ${diaVenc})
+    `
 
     // Criar lançamentos de receita (1 por parcela)
     if (data.valor) {
@@ -81,10 +73,10 @@ export async function createOrdemAction(data: {
         if (d.getMonth() !== (baseDate.getMonth() + i) % 12) d.setDate(0)
         const dataVenc = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
         const descricao = numParcelas > 1 ? `OS ${numero_os} (${i + 1}/${numParcelas})` : `OS ${numero_os}`
-        database.prepare(`
+        await sql`
           INSERT INTO lancamentos_financeiros (id, user_id, tipo, descricao, valor, data_lancamento, status, referencia_tipo, referencia_id)
-          VALUES (?, ?, 'receita', ?, ?, ?, 'pendente', 'os', ?)
-        `).run(generateId(), userId, descricao, valorParcela, dataVenc, id)
+          VALUES (${generateId()}, ${userId}, 'receita', ${descricao}, ${valorParcela}, ${dataVenc}, 'pendente', 'os', ${id})
+        `
       }
     }
   } catch {
@@ -119,32 +111,27 @@ export async function updateOrdemAction(
   const userId = await getSessionUserId()
   if (!userId) return { error: 'Usuário não autenticado' }
 
-  const database = getDb()
-  const result = database
-    .prepare(
-      `UPDATE ordens_servico SET cliente_id=?, data_execucao=?, tipo_servico=?, descricao_servico=?, local_execucao=?, equipamentos_utilizados=?, produtos_aplicados=?, area_tratada=?, pragas_alvo=?, observacoes=?, tecnico_responsavel=?, status=?, valor=?, garantia_meses=?, visitas_gratuitas=?, updated_at=datetime('now')
-       WHERE id=? AND user_id=?`
-    )
-    .run(
-      data.cliente_id,
-      data.data_execucao,
-      data.tipo_servico,
-      data.descricao_servico ?? null,
-      data.local_execucao ?? null,
-      data.equipamentos_utilizados ?? null,
-      data.produtos_aplicados ?? null,
-      data.area_tratada ?? null,
-      data.pragas_alvo ?? null,
-      data.observacoes ?? null,
-      data.tecnico_responsavel ?? null,
-      data.status,
-      data.valor ?? null,
-      data.garantia_meses ?? null,
-      data.visitas_gratuitas ?? 0,
-      id,
-      userId
-    )
-  if (result.changes === 0) return { error: 'Ordem não encontrada' }
+  const result = await sql`
+    UPDATE ordens_servico SET 
+      cliente_id=${data.cliente_id}, 
+      data_execucao=${data.data_execucao}, 
+      tipo_servico=${data.tipo_servico}, 
+      descricao_servico=${data.descricao_servico ?? null}, 
+      local_execucao=${data.local_execucao ?? null}, 
+      equipamentos_utilizados=${data.equipamentos_utilizados ?? null}, 
+      produtos_aplicados=${data.produtos_aplicados ?? null}, 
+      area_tratada=${data.area_tratada ?? null}, 
+      pragas_alvo=${data.pragas_alvo ?? null}, 
+      observacoes=${data.observacoes ?? null}, 
+      tecnico_responsavel=${data.tecnico_responsavel ?? null}, 
+      status=${data.status}, 
+      valor=${data.valor ?? null}, 
+      garantia_meses=${data.garantia_meses ?? null}, 
+      visitas_gratuitas=${data.visitas_gratuitas ?? 0}, 
+      updated_at=NOW()
+    WHERE id=${id} AND user_id=${userId}
+  `
+  if (result.length === 0) return { error: 'Ordem não encontrada' }
   revalidatePath('/dashboard/ordens')
   revalidatePath('/dashboard')
   return { success: true }
@@ -154,9 +141,8 @@ export async function deleteOrdemAction(id: string) {
   const userId = await getSessionUserId()
   if (!userId) return { error: 'Usuário não autenticado' }
 
-  const database = getDb()
-  const result = database.prepare('DELETE FROM ordens_servico WHERE id=? AND user_id=?').run(id, userId)
-  if (result.changes === 0) return { error: 'Ordem não encontrada' }
+  const result = await sql`DELETE FROM ordens_servico WHERE id=${id} AND user_id=${userId}`
+  if (result.length === 0) return { error: 'Ordem não encontrada' }
   revalidatePath('/dashboard/ordens')
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/financeiro')
@@ -170,13 +156,11 @@ export async function liquidarOrdemAction(
   const userId = await getSessionUserId()
   if (!userId) return { error: 'Usuário não autenticado' }
 
-  const database = getDb()
-  const result = database
-    .prepare(
-      'UPDATE ordens_servico SET liquidado=1, data_liquidacao=?, valor_pago=?, updated_at=datetime(\'now\') WHERE id=? AND user_id=?'
-    )
-    .run(data.data_liquidacao, data.valor_pago ?? null, id, userId)
-  if (result.changes === 0) return { error: 'Ordem não encontrada' }
+  const result = await sql`
+    UPDATE ordens_servico SET liquidado=1, data_liquidacao=${data.data_liquidacao}, valor_pago=${data.valor_pago ?? null}, updated_at=NOW() 
+    WHERE id=${id} AND user_id=${userId}
+  `
+  if (result.length === 0) return { error: 'Ordem não encontrada' }
   revalidatePath('/dashboard/ordens')
   revalidatePath('/dashboard/financeiro')
   revalidatePath('/dashboard')
@@ -187,11 +171,11 @@ export async function desfazerLiquidacaoAction(id: string) {
   const userId = await getSessionUserId()
   if (!userId) return { error: 'Usuário não autenticado' }
 
-  const database = getDb()
-  const result = database
-    .prepare('UPDATE ordens_servico SET liquidado=0, data_liquidacao=NULL, valor_pago=NULL, updated_at=datetime(\'now\') WHERE id=? AND user_id=?')
-    .run(id, userId)
-  if (result.changes === 0) return { error: 'Ordem não encontrada' }
+  const result = await sql`
+    UPDATE ordens_servico SET liquidado=0, data_liquidacao=NULL, valor_pago=NULL, updated_at=NOW() 
+    WHERE id=${id} AND user_id=${userId}
+  `
+  if (result.length === 0) return { error: 'Ordem não encontrada' }
   revalidatePath('/dashboard/ordens')
   revalidatePath('/dashboard/financeiro')
   revalidatePath('/dashboard')

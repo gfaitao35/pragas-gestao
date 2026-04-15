@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { sql } from '@/lib/db'
 import { getSessionUserId } from '@/lib/session'
 import { generateId } from '@/lib/auth'
 
@@ -17,12 +17,11 @@ export async function POST(
       return NextResponse.json({ error: 'Dados inválidos' }, { status: 400 })
     }
 
-    const database = getDb()
     const id = generateId()
-    database.prepare(`
+    await sql`
       INSERT INTO cliente_documentos (id, user_id, cliente_id, nome, tipo, url, tamanho)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(id, userId, clienteId, nome, tipo, url, tamanho || null)
+      VALUES (${id}, ${userId}, ${clienteId}, ${nome}, ${tipo}, ${url}, ${tamanho || null})
+    `
 
     return NextResponse.json({ id, success: true })
   } catch (error) {
@@ -40,10 +39,9 @@ export async function DELETE(
     if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
     const { docId } = await request.json()
-    const database = getDb()
-    database.prepare(
-      'DELETE FROM cliente_documentos WHERE id = ? AND cliente_id = ? AND user_id = ?'
-    ).run(docId, clienteId, userId)
+    await sql`
+      DELETE FROM cliente_documentos WHERE id = ${docId} AND cliente_id = ${clienteId} AND user_id = ${userId}
+    `
 
     return NextResponse.json({ success: true })
   } catch (error) {
