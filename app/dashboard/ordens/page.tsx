@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db'
+import { query } from '@/lib/db'
 import { getSessionUserId } from '@/lib/session'
 import { redirect } from 'next/navigation'
 import { OrdensTable } from '@/components/ordens/ordens-table'
@@ -79,10 +79,9 @@ export default async function OrdensPage() {
   const userId = await getSessionUserId()
   if (!userId) redirect('/auth/login')
 
-  const database = getDb()
-  const ordensRows = database.prepare('SELECT * FROM ordens_servico WHERE user_id = ? ORDER BY created_at DESC').all(userId) as Record<string, unknown>[]
-  const clientesRows = database.prepare('SELECT id, razao_social, nome_fantasia FROM clientes WHERE user_id = ? AND ativo = 1 ORDER BY razao_social ASC').all(userId) as Record<string, unknown>[]
-  const clientesFullRows = database.prepare('SELECT * FROM clientes WHERE user_id = ?').all(userId) as Record<string, unknown>[]
+  const ordensRows = await query<Record<string, unknown>>`SELECT * FROM ordens_servico WHERE user_id = ${userId} ORDER BY created_at DESC`
+  const clientesRows = await query<Record<string, unknown>>`SELECT id, razao_social, nome_fantasia FROM clientes WHERE user_id = ${userId} AND ativo = 1 ORDER BY razao_social ASC`
+  const clientesFullRows = await query<Record<string, unknown>>`SELECT * FROM clientes WHERE user_id = ${userId}`
 
   const clientesFullMap = new Map<string, Cliente>()
   for (const r of clientesFullRows) {

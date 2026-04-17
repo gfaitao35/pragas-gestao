@@ -41,6 +41,24 @@ export function FinanceiroClient({ ordens, contratos, parcelas }: FinanceiroClie
   const [categorias, setCategorias] = useState<any[]>([])
   const [showNovoLancamento, setShowNovoLancamento] = useState(false)
   const [novoLanc, setNovoLanc] = useState({ tipo: 'despesa', categoria_id: '', descricao: '', valor: '', data_lancamento: toLocalDateInput(), data_pagamento: '', status: 'pendente', forma_pagamento: '' })
+  const [valorDisplay, setValorDisplay] = useState('')
+
+  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove tudo que não é dígito
+    const digits = e.target.value.replace(/\D/g, '')
+    if (!digits) {
+      setValorDisplay('')
+      setNovoLanc(p => ({ ...p, valor: '' }))
+      return
+    }
+    // Trata como centavos: 1000 centavos = R$ 10,00
+    const cents = parseInt(digits, 10)
+    const reais = cents / 100
+    // Formata para exibição: 1.000,00
+    const display = reais.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    setValorDisplay(display)
+    setNovoLanc(p => ({ ...p, valor: String(reais) }))
+  }
   const [saving, setSaving] = useState(false)
   const [periodo, setPeriodo] = useState('mes_atual')
   const today = new Date()
@@ -158,6 +176,7 @@ export function FinanceiroClient({ ordens, contratos, parcelas }: FinanceiroClie
         toast.success(parcelas > 1 ? `${parcelas} parcelas criadas!` : 'Lançamento criado!')
         setShowNovoLancamento(false)
         setNovoLanc({ tipo: 'despesa', categoria_id: '', descricao: '', valor: '', data_lancamento: toLocalDateInput(), data_pagamento: '', status: 'pendente', forma_pagamento: '' })
+        setValorDisplay('')
         setNumParcelas(1)
         setDiaVencimento(String(new Date().getDate()).padStart(2, '0'))
         fetchLancamentos()
@@ -750,6 +769,7 @@ const despStatusChart = [
         setShowNovoLancamento(open)
         if (!open) {
           setNovoLanc({ tipo: 'despesa', categoria_id: '', descricao: '', valor: '', data_lancamento: toLocalDateInput(), data_pagamento: '', status: 'pendente', forma_pagamento: '' })
+          setValorDisplay('')
           setNumParcelas(1)
           setDiaVencimento(String(new Date().getDate()).padStart(2, '0'))
         }
@@ -772,7 +792,7 @@ const despStatusChart = [
               <Input value={novoLanc.descricao} onChange={e => setNovoLanc(p => ({ ...p, descricao: e.target.value }))} placeholder="Descrição do lançamento" />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div><Label className="text-xs">Valor Total (R$)</Label><Input type="number" step="0.01" value={novoLanc.valor} onChange={e => setNovoLanc(p => ({ ...p, valor: e.target.value }))} /></div>
+              <div><Label className="text-xs">Valor Total (R$)</Label><Input type="text" inputMode="numeric" placeholder="0,00" value={valorDisplay} onChange={handleValorChange} /></div>
               <div>
                 <Label className="text-xs">Data do 1º Vencimento</Label>
                 <Input type="date" value={novoLanc.data_lancamento} onChange={e => setNovoLanc(p => ({ ...p, data_lancamento: e.target.value }))} />
@@ -800,7 +820,7 @@ const despStatusChart = [
                   <Select value={diaVencimento} onValueChange={setDiaVencimento}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {Array.from({ length: 28 }, (_, i) => String(i + 1).padStart(2, '0')).map(d => (
+                      {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map(d => (
                         <SelectItem key={d} value={d}>Dia {d}</SelectItem>
                       ))}
                     </SelectContent>

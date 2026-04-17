@@ -33,7 +33,7 @@ export default async function DashboardPage() {
       SELECT COUNT(*) as c
       FROM contratos
       WHERE user_id = ${userId}
-        AND CURRENT_DATE BETWEEN data_inicio AND data_fim
+        AND CURRENT_DATE BETWEEN data_inicio::date AND data_fim::date
     `,
     queryOne<{ c: string }>`
       SELECT COUNT(*) as c

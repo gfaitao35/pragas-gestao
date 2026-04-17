@@ -1,22 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { sql, queryOne } from '@/lib/db'
 import { getSessionUserId } from '@/lib/session'
 import { randomUUID } from 'crypto'
-
-function ensureMetasTable(database: any) {
-  database.exec(`
-    CREATE TABLE IF NOT EXISTS metas_lucro (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      mes TEXT NOT NULL,
-      valor_meta REAL NOT NULL,
-      observacoes TEXT DEFAULT '',
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now')),
-      UNIQUE(user_id, mes)
-    )
-  `)
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,12 +17,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Parametro mes obrigatorio' }, { status: 400 })
     }
 
-    const database = getDb()
-    ensureMetasTable(database)
-
-    const meta = database.prepare(`
-      SELECT id, valor_meta, observacoes FROM metas_lucro WHERE user_id = ? AND mes = ?
-    `).get(userId, mes)
+    const meta = await queryOne`
+      SELECT id, valor_meta, observacoes FROM metas_lucro WHERE user_id = ${userId} AND mes = ${mes}
+    `
 
     return NextResponse.json(meta || null)
   } catch (error) {
@@ -60,23 +42,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Campos obrigatorios: mes, valor_meta' }, { status: 400 })
     }
 
-    const database = getDb()
-    ensureMetasTable(database)
-
     // Upsert: atualizar se existir, inserir se nao
-    const existing = database.prepare(`
-      SELECT id FROM metas_lucro WHERE user_id = ? AND mes = ?
-    `).get(userId, mes) as any
+    const existing = await queryOne<{ id: string }>`
+      SELECT id FROM metas_lucro WHERE user_id = ${userId} AND mes = ${mes}
+    `
 
     if (existing) {
-      database.prepare(`
-        UPDATE metas_lucro SET valor_meta = ?, observacoes = ?, updated_at = datetime('now')
-        WHERE id = ?
-      `).run(valor_meta, observacoes || '', existing.id)
+      await sql`
+        UPDATE metas_lucro SET valor_meta = ${valor_meta}, observacoes = ${observacoes || ''}, updated_at = NOW()
+        WHERE id = ${existing.id}
+      `
     } else {
-      database.prepare(`
-        INSERT INTO metas_lucro (id, user_id, mes, valor_meta, observacoes) VALUES (?, ?, ?, ?, ?)
-      `).run(randomUUID(), userId, mes, valor_meta, observacoes || '')
+      await sql`
+        INSERT INTO metas_lucro (id, user_id, mes, valor_meta, observacoes) VALUES (${randomUUID()}, ${userId}, ${mes}, ${valor_meta}, ${observacoes || ''})
+      `
     }
 
     return NextResponse.json({ success: true })

@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db'
+import { query } from '@/lib/db'
 import { getSessionUserId } from '@/lib/session'
 import { redirect } from 'next/navigation'
 import { CertificadosTable } from '@/components/certificados/certificados-table'
@@ -26,16 +26,16 @@ export default async function CertificadosPage() {
   const userId = await getSessionUserId()
   if (!userId) redirect('/auth/login')
 
-  const database = getDb()
-  const certRows = database.prepare('SELECT * FROM certificados WHERE user_id = ? ORDER BY created_at DESC').all(userId) as Record<string, unknown>[]
+  const certRows = await query<Record<string, unknown>>`SELECT * FROM certificados WHERE user_id = ${userId} ORDER BY created_at DESC`
   const osIds = [...new Set(certRows.map((r) => r.ordem_servico_id))] as string[]
   const ordensMap = new Map<string, OrdemServico & { cliente?: Partial<Cliente> }>()
 
   if (osIds.length > 0) {
-    const placeholders = osIds.map(() => '?').join(',')
-    const osRows = database.prepare(`SELECT * FROM ordens_servico WHERE id IN (${placeholders})`).all(...osIds) as Record<string, unknown>[]
+    const osRows = await query<Record<string, unknown>>`SELECT * FROM ordens_servico WHERE id = ANY(${osIds})`
     const clienteIds = [...new Set(osRows.map((r) => r.cliente_id))] as string[]
-    const clientesRows = database.prepare(`SELECT * FROM clientes WHERE id IN (${clienteIds.map(() => '?').join(',')})`).all(...clienteIds) as Record<string, unknown>[]
+    const clientesRows = clienteIds.length > 0 
+      ? await query<Record<string, unknown>>`SELECT * FROM clientes WHERE id = ANY(${clienteIds})`
+      : []
     const clientesMap = new Map<string, Partial<Cliente>>()
     for (const r of clientesRows) {
       clientesMap.set(r.id as string, {

@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db'
+import { query, queryOne } from '@/lib/db'
 import { getSessionUserId } from '@/lib/session'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,25 +11,21 @@ export default async function ContratosPage() {
   const userId = await getSessionUserId()
   if (!userId) redirect('/auth/login')
 
-  const database = getDb()
+  const contratos = await query<Record<string, unknown>>`
+    SELECT c.*, cl.razao_social 
+    FROM contratos c 
+    LEFT JOIN clientes cl ON c.cliente_id = cl.id 
+    WHERE c.user_id = ${userId} 
+    ORDER BY c.created_at DESC
+  `
 
-  const contratos = database
-    .prepare(
-      `SELECT c.*, cl.razao_social 
-       FROM contratos c 
-       LEFT JOIN clientes cl ON c.cliente_id = cl.id 
-       WHERE c.user_id = ? 
-       ORDER BY c.created_at DESC`
-    )
-    .all(userId) as (Record<string, unknown>)[]
-
-  const stats = database.prepare(`
+  const stats = await queryOne<{ total: number; ativos: number; valor_total_ativos: number }>`
     SELECT 
       COUNT(*) as total,
       COUNT(CASE WHEN status = 'ativo' THEN 1 END) as ativos,
-      SUM(CASE WHEN status = 'ativo' THEN valor_total ELSE 0 END) as valor_total_ativos
-    FROM contratos WHERE user_id = ?
-  `).get(userId) as { total: number; ativos: number; valor_total_ativos: number }
+      COALESCE(SUM(CASE WHEN status = 'ativo' THEN valor_total ELSE 0 END), 0) as valor_total_ativos
+    FROM contratos WHERE user_id = ${userId}
+  ` || { total: 0, ativos: 0, valor_total_ativos: 0 }
 
   return (
     <div className="space-y-6">

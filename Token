@@ -1,2 +1,0 @@
-# CORRETO
-DATABASE_URL=postgresql://neondb_owner:npg_hHnQ71vKBXRD@ep-young-queen-ac5pmdfb-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require

@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db'
+import { query } from '@/lib/db'
 import { getSessionUserId } from '@/lib/session'
 import { redirect } from 'next/navigation'
 import { ClientesTable } from '@/components/clientes/clientes-table'
@@ -41,8 +41,7 @@ export default async function ClientesPage() {
   const userId = await getSessionUserId()
   if (!userId) redirect('/auth/login')
 
-  const database = getDb()
-  const rows = database.prepare('SELECT * FROM clientes WHERE user_id = ? ORDER BY razao_social ASC').all(userId) as Record<string, unknown>[]
+  const rows = await query<Record<string, unknown>>`SELECT * FROM clientes WHERE user_id = ${userId} ORDER BY razao_social ASC`
   const clientes = rows.map(rowToCliente)
 
   return (

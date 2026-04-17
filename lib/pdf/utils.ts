@@ -1,7 +1,7 @@
 // lib/pdf/utils.ts
-import { getDb } from '@/lib/db'
+import { queryOne } from '@/lib/db'
 import { getSessionUserId } from '@/lib/session'
-import { formatDateBRFromYYYYMMDD } from '@/lib/utils'  // ← reuso do seu utils existente!
+import { formatDateBRFromYYYYMMDD } from '@/lib/utils'
 
 type Template = {
   nome_empresa: string | null
@@ -18,25 +18,22 @@ type Template = {
   texto_assinatura: string | null
   nome_assinatura: string | null
   cargo_assinatura: string | null
-  // campos_visiveis?: string  // se for JSON string, pode parsear depois
 }
 
 export async function getTemplate(tipo: 'os' | 'certificado' | 'orcamento'): Promise<Template | null> {
   const userId = await getSessionUserId()
   if (!userId) return null
 
-  const db = getDb()
-
   // Tenta o template específico
-  let template = db.prepare(
-    'SELECT * FROM document_templates WHERE user_id = ? AND tipo = ?'
-  ).get(userId, tipo) as Template | undefined
+  let template = await queryOne<Template>`
+    SELECT * FROM document_templates WHERE user_id = ${userId} AND tipo = ${tipo}
+  `
 
   // Fallback para 'os' se não encontrar e não for OS
   if (!template && tipo !== 'os') {
-    template = db.prepare(
-      'SELECT * FROM document_templates WHERE user_id = ? AND tipo = ?'
-    ).get(userId, 'os') as Template | undefined
+    template = await queryOne<Template>`
+      SELECT * FROM document_templates WHERE user_id = ${userId} AND tipo = 'os'
+    `
   }
 
   return template || null
@@ -54,7 +51,7 @@ export function renderOrcamentoHtml(
     formasPagamento: string[]
     consideracoes: string[]
     diasValidade: number
-    empresa?: { nomeFantasia?: string; razaoSocial?: string; /* outros se quiser usar */ }
+    empresa?: { nomeFantasia?: string; razaoSocial?: string }
   },
   template: Template
 ): string {
@@ -67,7 +64,7 @@ export function renderOrcamentoHtml(
     ? `border: 1px ${template.estilo_borda} ${template.cor_secundaria};`
     : 'border: none;'
 
-  const dataFormatada = formatDateBRFromYYYYMMDD(data)  // ← usando sua função!
+  const dataFormatada = formatDateBRFromYYYYMMDD(data)
 
   return `
 <!DOCTYPE html>
