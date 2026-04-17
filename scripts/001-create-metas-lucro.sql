@@ -1,7 +1,7 @@
 -- Criação da tabela metas_lucro
 CREATE TABLE IF NOT EXISTS metas_lucro (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   mes VARCHAR(7) NOT NULL, -- formato: 'YYYY-MM'
   valor_meta NUMERIC(12, 2) NOT NULL DEFAULT 0,
   observacoes TEXT DEFAULT '',
