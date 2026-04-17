@@ -94,7 +94,7 @@ export async function getUserByEmail(email: string): Promise<
 > {
   const rows = await sql`
     SELECT id, email, senha, nome_completo, role FROM users WHERE email = ${email}
-  `
+  ` as { id: string; email: string; senha: string; nome_completo: string; role: string }[]
   return rows[0] ?? null
 }
 
@@ -116,7 +116,7 @@ export async function getValidResetToken(token: string): Promise<{ user_id: stri
   const rows = await sql`
     SELECT user_id FROM password_resets
     WHERE token = ${token} AND used = 0 AND expires_at > NOW()
-  `
+  ` as { user_id: string }[]
   return rows[0] ?? null
 }
 
