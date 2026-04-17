@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
       FROM contratos ct
       LEFT JOIN clientes cl ON ct.cliente_id = cl.id
       WHERE ct.user_id = ${userId} AND ct.status IN ('ativo', 'concluido')
-        AND ct.data_inicio::date <= ${mesUltimoDia}::date AND ct.data_fim::date >= ${mesInicio}::date
+        AND ct.data_inicio::date <= ${mesUltimoDia}::date AND (ct.data_fim IS NULL OR ct.data_fim::date >= ${mesInicio}::date)
       ORDER BY ct.data_inicio DESC
     `
 
