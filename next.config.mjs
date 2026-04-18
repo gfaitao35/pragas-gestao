@@ -1,9 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Removido: output: 'standalone' (não é necessário na Vercel)
-  // Removido: tudo relacionado ao Electron
   images: {
     remotePatterns: [],
+  },
+  // Necessário para puppeteer-core + chromium funcionarem no Vercel
+  experimental: {
+    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium-min'],
   },
 }
 
