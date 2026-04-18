@@ -1,6 +1,6 @@
 import type { Certificado } from './types'
 import { formatDateBRFromYYYYMMDD } from './utils'
-import { generateCertificadoDocx } from './certificado-docx'
+import { generateCertificadoPDF } from './pdf-certificado'
 
 interface TemplateStyle {
   nome_empresa: string
@@ -247,6 +247,6 @@ export async function generateCertificatePDF(certificado: Certificado) {
     .map((sv: any) => ({ nome: sv.nome, checked: true }))
 
 
-  // Gera como .docx (Word) em vez de PDF
-  await generateCertificadoDocx(certificado)
+  // Gera como PDF (igual aos demais documentos do sistema)
+  await generateCertificadoPDF(certificado)
 }
