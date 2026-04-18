@@ -1,41 +1,83 @@
-   const Database = require('better-sqlite3')
-   const { neon } = require('@neondatabase/serverless')
-   const path = require('path')
+require('dotenv').config()
+const Database = require('better-sqlite3')
+const { neon } = require('@neondatabase/serverless')
 
-   const DATABASE_URL = 'COLE_SUA_CONNECTION_STRING_AQUI'
-   const SQLITE_PATH = './data/app.db' // ajuste o caminho se necessário
+const sqlite = new Database('./unified.db') // ajuste o caminho se necessário
+const sql = neon(process.env.DATABASE_URL)
 
-   const sqlite = new Database(SQLITE_PATH)
-   const sql = neon(DATABASE_URL)
+// Ordem importa por causa de foreign keys
+const TABLES = [
+  'users',
+  'empresa_config',
+  'clientes',
+  'servicos',
+  'categorias_financeiras',
+  'document_templates',
+  'ordens_servico',
+  'certificados',
+  'contratos',
+  'parcelas',
+  'lancamentos_financeiros',
+  'metas_lucro',
+  'laudos',
+  'cliente_documentos',
+  'password_resets',
+]
 
-   async function migrate() {
-     const tables = [
-       'users', 'clientes', 'ordens_servico', 'certificados',
-       'contratos', 'parcelas', 'document_templates',
-       'categorias_financeiras', 'lancamentos_financeiros',
-       'empresa_config', 'servicos', 'password_resets',
-       'laudos', 'cliente_documentos'
-     ]
+async function migrateTable(table) {
+  const rows = sqlite.prepare(`SELECT * FROM ${table}`).all()
 
-     for (const table of tables) {
-       console.log(`Migrando ${table}...`)
-       const rows = sqlite.prepare(`SELECT * FROM ${table}`).all()
-       for (const row of rows) {
-         const cols = Object.keys(row)
-         const vals = cols.map(c => row[c])
-         const placeholders = cols.map((_, i) => `$${i+1}`).join(', ')
-         try {
-           await sql.query(
-             `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
-             vals
-           )
-         } catch(e) {
-           console.error(`Erro em ${table}:`, e.message)
-         }
-       }
-       console.log(`✅ ${table}: ${rows.length} registros`)
-     }
-     console.log('\n✅ Migração concluída!')
-   }
+  if (rows.length === 0) {
+    console.log(`  ⏭  ${table}: vazio, pulando`)
+    return
+  }
 
-   migrate().catch(console.error)
+  const cols = Object.keys(rows[0])
+  const colList = cols.join(', ')
+  const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ')
+  const query = `INSERT INTO ${table} (${colList}) VALUES (${placeholders}) ON CONFLICT (id) DO NOTHING`
+
+  let inserted = 0
+  let skipped = 0
+  let errors = 0
+
+  for (const row of rows) {
+    const values = cols.map(c => row[c] ?? null)
+    try {
+      const result = await sql.query(query, values)
+      if (result.rowCount === 0) {
+        skipped++ // ON CONFLICT DO NOTHING — já existia
+      } else {
+        inserted++
+      }
+    } catch (e) {
+      if (errors === 0) {
+        console.log(`  ⚠️  Primeiro erro em ${table}: ${e.message}`)
+      }
+      errors++
+    }
+  }
+
+  console.log(`  ✅ ${table}: ${inserted} inseridos | ${skipped} já existiam | ${errors} erros`)
+}
+
+async function main() {
+  console.log('🚀 Iniciando migração SQLite → Neon...\n')
+
+  for (const table of TABLES) {
+    console.log(`📦 Migrando ${table}...`)
+    try {
+      await migrateTable(table)
+    } catch (e) {
+      console.log(`  ❌ Erro geral em ${table}: ${e.message}`)
+    }
+  }
+
+  console.log('\n✅ Migração concluída!')
+  sqlite.close()
+}
+
+main().catch(e => {
+  console.error('Erro fatal:', e)
+  process.exit(1)
+})

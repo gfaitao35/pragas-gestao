@@ -18,6 +18,8 @@ const newId = () => crypto.randomUUID()
 
 function normalizeImageUrl(url: string): string {
   if (!url) return ''
+  // URLs absolutas (Vercel Blob) já estão prontas
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
   if (url.startsWith('/uploads/')) return url.replace('/uploads/', '/api/file/')
   return url
 }
@@ -26,6 +28,19 @@ function normalizeImageUrl(url: string): string {
 async function resolveLogoUrl(url: string): Promise<string> {
   if (!url) return ''
   if (url.startsWith('data:')) return url
+  // URLs absolutas (Vercel Blob): faz fetch direto e converte para base64
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    try {
+      const res = await fetch(url)
+      if (res.ok) {
+        const arrayBuffer = await res.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        const contentType = res.headers.get('content-type') || 'image/png'
+        return `data:${contentType};base64,${buffer.toString('base64')}`
+      }
+    } catch {}
+    return url
+  }
   try {
     const apiUrl = url.startsWith('/uploads/')
       ? url.replace('/uploads/', '/api/file/')

@@ -79,6 +79,8 @@ const defaultConfig: EmpresaConfig = {
 
 function normalizeImageUrl(url: string): string {
   if (!url) return url
+  // URLs absolutas (Vercel Blob) já estão prontas
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
   if (url.startsWith('/uploads/')) return url.replace('/uploads/', '/api/file/')
   return url
 }
