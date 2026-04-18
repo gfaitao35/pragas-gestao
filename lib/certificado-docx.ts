@@ -100,7 +100,14 @@ function sigTable(legal: { nome: string; cargo: string; cpf: string }, tecnico: 
 
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
-    borders: { top: BorderStyle.NONE as any, bottom: BorderStyle.NONE as any, left: BorderStyle.NONE as any, right: BorderStyle.NONE as any, insideH: BorderStyle.NONE as any, insideV: BorderStyle.NONE as any },
+    borders: {
+      top: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+      bottom: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+      left: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+      right: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+      insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+      insideVertical: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+    },
     rows: [new TableRow({ children: [
       cell([legal.nome || 'Responsável Legal', legal.cargo || 'Responsável Legal', legal.cpf ? `CPF: ${legal.cpf}` : '']),
       cell([tecnico.nome || 'Responsável Técnico', tecnico.cargo || 'Responsável Técnico', tecnico.registro ? `Nº Registro: ${tecnico.registro}` : '']),
