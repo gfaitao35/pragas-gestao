@@ -1,61 +1,54 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from "next/server"
+import puppeteer from "puppeteer-core"
+import chromium from "@sparticuz/chromium-min"
 
 export const maxDuration = 60
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { html, filename } = await req.json()
-    if (!html) return NextResponse.json({ error: 'HTML obrigatório' }, { status: 400 })
+    const { html, options = {} } = await request.json()
 
-    let pdfBuffer: Buffer
-
-    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-      // Produção (Vercel): usa chromium headless
-      const chromium = await import('@sparticuz/chromium-min')
-      const puppeteer = await import('puppeteer-core')
-
-      const browser = await puppeteer.default.launch({
-        args: chromium.default.args,
-        defaultViewport: chromium.default.defaultViewport,
-        executablePath: await chromium.default.executablePath(
-          'https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar'
-        ),
-        headless: true,
-      })
-
-      const page = await browser.newPage()
-      await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 })
-      const pdf = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' },
-      })
-      await browser.close()
-      pdfBuffer = Buffer.from(pdf)
-    } else {
-      // Dev local: usa puppeteer completo instalado localmente
-      const puppeteer = await import('puppeteer')
-      const browser = await puppeteer.default.launch({ headless: true })
-      const page = await browser.newPage()
-      await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 })
-      const pdf = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' },
-      })
-      await browser.close()
-      pdfBuffer = Buffer.from(pdf)
+    if (!html) {
+      return NextResponse.json({ error: "HTML content is required" }, { status: 400 })
     }
+
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath(
+        "https://github.com/nicholasc/chromium-builds/releases/download/v131.0.6778.69/chromium-v131.0.6778.69-pack.tar"
+      ),
+      headless: true,
+      defaultViewport: { width: 1920, height: 1080 },
+    })
+
+    const page = await browser.newPage()
+    await page.setContent(html, { waitUntil: "networkidle0" })
+
+    const pdfBuffer = await page.pdf({
+      format: options.format || "A4",
+      printBackground: true,
+      margin: options.margin || {
+        top: "20mm",
+        right: "20mm",
+        bottom: "20mm",
+        left: "20mm",
+      },
+      ...options,
+    })
+
+    await browser.close()
 
     return new NextResponse(pdfBuffer, {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename || 'documento.pdf'}"`,
-        'Content-Length': String(pdfBuffer.length),
+        "Content-Type": "application/pdf",
+        "Content-Disposition": 'attachment; filename="document.pdf"',
       },
     })
   } catch (error) {
-    console.error('Erro ao gerar PDF:', error)
-    return NextResponse.json({ error: 'Erro ao gerar PDF' }, { status: 500 })
+    console.error("Error generating PDF:", error)
+    return NextResponse.json(
+      { error: "Failed to generate PDF", details: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 }
+    )
   }
 }
