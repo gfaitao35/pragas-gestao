@@ -27,13 +27,20 @@ export async function openAsPdf(html: string, filename: string): Promise<void> {
     if (res.ok) {
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = filename
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      const tab = window.open(url, '_blank')
+      // Libera memória após a aba abrir
+      if (tab) {
+        tab.addEventListener('beforeunload', () => URL.revokeObjectURL(url))
+      } else {
+        // Popup bloqueado — fallback para download
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }
       return
     }
   } catch (err) {
