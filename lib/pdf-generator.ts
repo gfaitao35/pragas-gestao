@@ -457,5 +457,5 @@ export async function generateCertificatePDF(certificado: Certificado) {
 </html>`
 
   const pdfFilename = `certificate-${certificado.numero_certificado || 'certificado'}-${Date.now()}.pdf`
-  await openAsPdf(htmlContent, pdfFilename, 'docx')
+  await openAsPdf(htmlContent, pdfFilename)
 }
