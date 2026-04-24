@@ -70,6 +70,9 @@ export default function ContratoDetalhesPage() {
     data_inicio: '', data_fim: '', status: '', observacoes: ''
   })
   const [editParcelaForm, setEditParcelaForm] = useState({ valor_parcela: '', data_vencimento: '' })
+  const [editingDateId, setEditingDateId] = useState<string | null>(null)
+  const [editingDateValue, setEditingDateValue] = useState('')
+  const [savingDate, setSavingDate] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -97,6 +100,30 @@ export default function ContratoDetalhesPage() {
       router.push('/dashboard/contratos')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const saveDate = async (parcelaId: string) => {
+    if (!editingDateValue) return
+    setSavingDate(true)
+    try {
+      const res = await fetch(`/api/parcelas/${parcelaId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data_vencimento: editingDateValue }),
+      })
+      if (res.ok) {
+        toast.success('Data de vencimento atualizada!')
+        setEditingDateId(null)
+        setRefreshKey(p => p + 1)
+      } else {
+        const err = await res.json().catch(() => ({}))
+        toast.error((err as any).error || 'Erro ao atualizar data')
+      }
+    } catch {
+      toast.error('Erro ao atualizar data')
+    } finally {
+      setSavingDate(false)
     }
   }
 
@@ -397,7 +424,46 @@ export default function ContratoDetalhesPage() {
                         {atrasada && <Badge variant="destructive" className="text-xs">Vencida</Badge>}
                         {proxima && <Badge className="bg-amber-100 text-amber-800 text-xs">Vence em breve</Badge>}
                       </div>
-                      <p className="text-sm text-muted-foreground">Vencimento: {formatDateBRFromYYYYMMDD(parcela.data_vencimento)}</p>
+                      <div className="flex items-center gap-1.5">
+                        {editingDateId === parcela.id ? (
+                          <>
+                            <Input
+                              type="date"
+                              value={editingDateValue}
+                              onChange={e => setEditingDateValue(e.target.value)}
+                              className="h-7 text-xs w-36"
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => saveDate(parcela.id)}
+                              disabled={savingDate}
+                              className="text-green-600 hover:text-green-700 disabled:opacity-50"
+                              title="Salvar"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setEditingDateId(null)}
+                              className="text-red-500 hover:text-red-700"
+                              title="Cancelar"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm text-muted-foreground">Vencimento: {formatDateBRFromYYYYMMDD(parcela.data_vencimento)}</p>
+                            <button
+                              onClick={() => { setEditingDateId(parcela.id); setEditingDateValue(parcela.data_vencimento) }}
+                              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                              title="Editar data de vencimento"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              Alterar
+                            </button>
+                          </>
+                        )}
+                      </div>
                       {parcela.data_pagamento && <p className="text-sm text-muted-foreground">Pago em: {formatDateBRFromYYYYMMDD(parcela.data_pagamento)} {parcela.forma_pagamento ? `(${parcela.forma_pagamento})` : ''}</p>}
                     </div>
                     <div className="flex items-center gap-3">

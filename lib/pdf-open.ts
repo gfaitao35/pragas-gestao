@@ -27,11 +27,13 @@ export async function openAsPdf(html: string, filename: string): Promise<void> {
     if (res.ok) {
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
-      // Abre o PDF no leitor do browser em nova aba
-      // O usuário pode visualizar e depois salvar manualmente se quiser
-      window.open(url, '_blank')
-      // Libera a memória após 60 segundos
-      setTimeout(() => URL.revokeObjectURL(url), 60000)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
       return
     }
   } catch (err) {

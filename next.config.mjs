@@ -4,7 +4,9 @@ const nextConfig = {
     remotePatterns: [],
   },
   // Necessário para puppeteer-core + chromium funcionarem no Vercel
-  serverExternalPackages: ['puppeteer-core', '@sparticuz/chromium-min'],
+  experimental: {
+    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium-min'],
+  },
 }
 
 export default nextConfig

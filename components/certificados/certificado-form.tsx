@@ -103,6 +103,7 @@ export function CertificadoForm({ ordem }: CertificadoFormProps) {
     data_emissao: new Date().toISOString().split('T')[0],
     data_validade: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     observacoes: '',
+    observacao_manual: '',
   })
 
   // Pragas Alvo
@@ -355,7 +356,7 @@ export function CertificadoForm({ ordem }: CertificadoFormProps) {
     setLoading(true)
 
     try {
-      const observacoesFormatadas = `${formData.observacoes}\n\nObservacao e Cuidados Especiais\n${formatObservacoes()}`
+      const observacoesFormatadas = `${formData.observacoes}\n\nObservacao e Cuidados Especiais\n${formatObservacoes()}<!--OBS_MANUAL-->${formData.observacao_manual}`
 
       const result = await createCertificadoAction({
         ordem_servico_id: ordem.id,
@@ -762,9 +763,9 @@ export function CertificadoForm({ ordem }: CertificadoFormProps) {
         </Card>
       </div>
 
-      {/* OBSERVAÇÕES */}
+      {/* OBSERVAÇÕES AUTOMÁTICAS */}
       <div className="space-y-2">
-        <Label htmlFor="observacoes">Observações Adicionais</Label>
+        <Label htmlFor="observacoes">Observações Adicionais (internas)</Label>
         <Textarea
           id="observacoes"
           value={formData.observacoes}
@@ -774,6 +775,30 @@ export function CertificadoForm({ ordem }: CertificadoFormProps) {
           disabled={loading}
         />
       </div>
+
+      {/* OBSERVAÇÃO MANUAL — aparece no certificado */}
+      <Card className="border-blue-200 bg-blue-50/40">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            📝 Observação
+            <span className="text-xs font-normal text-muted-foreground">(aparece no certificado)</span>
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Este texto será exibido no certificado logo abaixo do texto principal.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            id="observacao_manual"
+            value={formData.observacao_manual}
+            onChange={(e) => handleFormChange('observacao_manual', e.target.value)}
+            placeholder="Ex: Retorno garantido em caso de reinfestação. Produto utilizado registrado no MAPA..."
+            rows={4}
+            disabled={loading}
+            className="bg-white"
+          />
+        </CardContent>
+      </Card>
 
       {/* BOTÃO SUBMIT */}
       <div className="flex justify-end gap-2">
