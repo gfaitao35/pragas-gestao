@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
       pdfBuffer = Buffer.from(pdf)
     } else {
       // Dev local: usa puppeteer completo instalado localmente
+      // @ts-ignore
       const puppeteer = await import('puppeteer')
       const browser = await puppeteer.default.launch({ headless: true })
       const page = await browser.newPage()
