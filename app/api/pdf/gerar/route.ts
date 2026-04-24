@@ -11,12 +11,13 @@ export async function POST(req: NextRequest) {
 
     if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
       // Produção (Vercel): usa chromium headless
+      // @ts-ignore
       const chromium = await import('@sparticuz/chromium-min')
+      // @ts-ignore
       const puppeteer = await import('puppeteer-core')
 
       const browser = await puppeteer.default.launch({
         args: chromium.default.args,
-        defaultViewport: chromium.default.defaultViewport,
         executablePath: await chromium.default.executablePath(
           'https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar'
         ),
