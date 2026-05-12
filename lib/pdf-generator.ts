@@ -195,121 +195,128 @@ export async function generateCertificatePDF(certificado: Certificado) {
 <style>
   * { margin:0; padding:0; box-sizing:border-box }
   @page { size:A4; margin:0 }
-  body {
+  html, body {
     font-family: Arial, Helvetica, sans-serif;
     background: #fff;
     color: #1a1a1a;
     width: 210mm;
-    min-height: 297mm;
+    height: 297mm;
     margin: 0 auto;
-    font-size: 11px;
+    font-size: 10.5px;
+    overflow: hidden;
   }
   .page {
-    padding: 14mm 16mm 12mm;
-    min-height: calc(297mm - 12mm);
+    padding: 10mm 12mm 8mm;
+    height: calc(297mm - 8mm);
+    max-height: calc(297mm - 8mm);
     display: flex;
     flex-direction: column;
     border: 1.5px solid #222;
-    margin: 6mm;
+    margin: 4mm;
+    overflow: hidden;
   }
 
   /* CABECALHO */
   .header {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding-bottom: 12px;
+    gap: 12px;
+    padding-bottom: 8px;
     border-bottom: 2px solid #1a1a1a;
-    margin-bottom: 14px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
   }
-  .header-logo img { max-height: 60px; max-width: 100px; object-fit: contain; }
+  .header-logo img { max-height: 52px; max-width: 90px; object-fit: contain; }
   .header-info { flex: 1 }
   .header-info .empresa-nome {
-    font-size: 16px; font-weight: 700; text-transform: uppercase;
+    font-size: 14px; font-weight: 700; text-transform: uppercase;
     letter-spacing: 1px; color: #1a1a1a;
   }
-  .header-info .empresa-sub { font-size: 9px; color: #555; margin-top: 3px; line-height: 1.6; }
-  .header-num { text-align: right; border-left: 1px solid #ccc; padding-left: 14px; white-space: nowrap; }
-  .header-num .label { font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #777 }
-  .header-num .num { font-size: 13px; font-weight: 700; color: #1a1a1a; margin-top: 2px }
+  .header-info .empresa-sub { font-size: 8.5px; color: #555; margin-top: 2px; line-height: 1.5; }
+  .header-num { text-align: right; border-left: 1px solid #ccc; padding-left: 12px; white-space: nowrap; }
+  .header-num .label { font-size: 7.5px; text-transform: uppercase; letter-spacing: 1px; color: #777 }
+  .header-num .num { font-size: 12px; font-weight: 700; color: #1a1a1a; margin-top: 2px }
 
   /* TITULO */
-  .titulo-bloco { text-align: center; margin-bottom: 16px }
+  .titulo-bloco { text-align: center; margin-bottom: 8px; flex-shrink: 0; }
   .titulo-bloco h1 {
-    font-size: 18px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 3px; color: #1a1a1a;
+    font-size: 15px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2.5px; color: #1a1a1a;
   }
   .titulo-bloco .subtitulo {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: #666; margin-top: 4px;
+    font-size: 8.5px; text-transform: uppercase; letter-spacing: 1.5px; color: #666; margin-top: 3px;
   }
-  .titulo-divider { height: 1px; background: #1a1a1a; margin: 8px 60px 0; }
+  .titulo-divider { height: 1px; background: #1a1a1a; margin: 5px 60px 0; }
 
   /* TEXTO PRINCIPAL */
   .cert-body {
-    font-size: 11.5px; line-height: 2; text-align: justify;
-    margin-bottom: 16px; padding: 14px 18px;
+    font-size: 10.5px; line-height: 1.7; text-align: justify;
+    margin-bottom: 8px; padding: 9px 13px;
     border: 1px solid #ddd; background: #fafafa;
+    flex-shrink: 0;
   }
 
   /* OBSERVACAO MANUAL */
   .obs-manual-box {
-    margin-bottom: 12px; padding: 8px 12px;
+    margin-bottom: 7px; padding: 5px 9px;
     border-left: 3px solid #1a1a1a; background: #f5f5f5;
-    font-size: 10.5px; line-height: 1.65;
+    font-size: 10px; line-height: 1.5;
+    flex-shrink: 0;
   }
   .obs-manual-titulo {
-    font-size: 8px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 1px; margin-bottom: 3px; color: #333;
+    font-size: 7.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 2px; color: #333;
   }
 
   /* SECAO */
-  .section { margin-bottom: 12px }
+  .section { margin-bottom: 7px; flex-shrink: 0; }
   .section-title {
-    font-size: 10px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 1.5px; color: #1a1a1a;
-    border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 8px;
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.2px; color: #1a1a1a;
+    border-bottom: 1px solid #ccc; padding-bottom: 3px; margin-bottom: 5px;
   }
 
   /* SERVICOS CHECKBOX */
-  .servicos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
-  .servico-item { display: flex; align-items: center; gap: 7px; font-size: 10.5px; }
+  .servicos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; }
+  .servico-item { display: flex; align-items: center; gap: 6px; font-size: 10px; }
   .chk {
-    width: 13px; height: 13px; border: 1.5px solid #333;
+    width: 12px; height: 12px; border: 1.5px solid #333;
     display: inline-flex; align-items: center; justify-content: center;
-    font-size: 9px; font-weight: 900; flex-shrink: 0; background: #fff;
+    font-size: 8.5px; font-weight: 900; flex-shrink: 0; background: #fff;
   }
   .chk.checked { background: #1a1a1a; color: #fff }
 
   /* OBSERVACOES */
-  .obs-list { padding-left: 16px; font-size: 10.5px; line-height: 1.9 }
-  .obs-list li { margin-bottom: 2px }
+  .obs-list { padding-left: 14px; font-size: 10px; line-height: 1.65 }
+  .obs-list li { margin-bottom: 1px }
   .obs-alert {
-    margin-top: 8px; font-size: 10px; font-weight: 700; color: #7a3800;
-    border: 1px solid #ccc; padding: 4px 10px; display: inline-block;
+    margin-top: 5px; font-size: 9.5px; font-weight: 700; color: #7a3800;
+    border: 1px solid #ccc; padding: 2px 8px; display: inline-block;
   }
 
   /* PRODUTOS */
-  .produtos-grid { display: flex; gap: 16px }
+  .produtos-grid { display: flex; gap: 14px }
   .produtos-col { flex: 1 }
-  .produtos-col-title { font-size: 10px; font-weight: 700; margin-bottom: 4px; color: #444 }
-  .produto-item { font-size: 10px; line-height: 1.8; font-family: 'Courier New', monospace }
+  .produtos-col-title { font-size: 9.5px; font-weight: 700; margin-bottom: 3px; color: #444 }
+  .produto-item { font-size: 9.5px; line-height: 1.6; font-family: 'Courier New', monospace }
 
   /* ASSINATURAS */
-  .sig-row { display: flex; gap: 20px; margin-top: auto; padding-top: 14px; }
+  .sig-row { display: flex; gap: 16px; margin-top: auto; padding-top: 8px; flex-shrink: 0; }
   .sig-block { flex: 1; text-align: center }
-  .sig-img { max-height: 50px; max-width: 140px; object-fit: contain; margin: 0 auto 6px; display: block }
-  .sig-line { border-top: 1px solid #1a1a1a; margin: 40px auto 6px; width: 85% }
-  .sig-name { font-size: 11px; font-weight: 700 }
-  .sig-role { font-size: 9px; color: #666; margin-top: 2px }
-  .sig-reg { font-size: 9px; color: #444; font-weight: 600; margin-top: 2px }
+  .sig-img { max-height: 42px; max-width: 130px; object-fit: contain; margin: 0 auto 4px; display: block }
+  .sig-line { border-top: 1px solid #1a1a1a; margin: 28px auto 4px; width: 85% }
+  .sig-name { font-size: 10.5px; font-weight: 700 }
+  .sig-role { font-size: 8.5px; color: #666; margin-top: 1px }
+  .sig-reg { font-size: 8.5px; color: #444; font-weight: 600; margin-top: 1px }
 
   /* RODAPE */
   .rodape {
-    margin-top: 14px; padding-top: 8px; border-top: 1px solid #ccc;
-    text-align: center; font-size: 8.5px; color: #777; line-height: 1.8;
+    margin-top: 8px; padding-top: 5px; border-top: 1px solid #ccc;
+    text-align: center; font-size: 8px; color: #777; line-height: 1.6;
+    flex-shrink: 0;
   }
-  .rodape-alvaras { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
-  .alvara-badge { font-size: 8px; font-weight: 600; border: 1px solid #ccc; padding: 2px 8px; color: #444; }
+  .rodape-alvaras { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 3px; }
+  .alvara-badge { font-size: 7.5px; font-weight: 600; border: 1px solid #ccc; padding: 2px 7px; color: #444; }
 
   @media print { body { margin: 0 } }
 </style>
