@@ -186,3 +186,67 @@ export interface Servico {
   created_at: string
   updated_at: string
 }
+
+// Tipos do módulo de frotas
+export interface Veiculo {
+  id: string
+  user_id: string
+  modelo: string
+  marca: string | null
+  placa: string
+  ano: number | null
+  cor: string | null
+  quilometragem: number
+  combustivel: string | null
+  renavam: string | null
+  chassi: string | null
+  observacoes: string | null
+  ativo: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface VeiculoDocumento {
+  id: string
+  veiculo_id: string
+  user_id: string
+  tipo: string
+  nome: string
+  url: string
+  data_vencimento: string | null
+  observacoes: string | null
+  created_at: string
+}
+
+export interface VeiculoManutencao {
+  id: string
+  veiculo_id: string
+  user_id: string
+  tipo: string
+  descricao: string
+  data_manutencao: string
+  quilometragem: number | null
+  valor: number
+  fornecedor: string | null
+  observacoes: string | null
+  lancamento_id: string | null
+  created_at: string
+  veiculo?: Veiculo
+}
+
+export interface VeiculoAbastecimento {
+  id: string
+  veiculo_id: string
+  user_id: string
+  data_abastecimento: string
+  quilometragem: number | null
+  litros: number
+  valor_litro: number
+  valor_total: number
+  combustivel: string
+  posto: string | null
+  observacoes: string | null
+  lancamento_id: string | null
+  created_at: string
+  veiculo?: Veiculo
+}
