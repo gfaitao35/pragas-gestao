@@ -186,3 +186,70 @@ export interface Servico {
   created_at: string
   updated_at: string
 }
+
+// Módulo de Frotas
+export type TipoCombustivel = 'gasolina' | 'etanol' | 'diesel' | 'flex' | 'gnv' | 'eletrico'
+
+export interface Veiculo {
+  id: string
+  user_id: string
+  modelo: string
+  marca: string | null
+  placa: string
+  ano: number | null
+  cor: string | null
+  quilometragem: number
+  tipo_combustivel: TipoCombustivel | null
+  observacoes: string | null
+  ativo: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface VeiculoDocumento {
+  id: string
+  veiculo_id: string
+  user_id: string
+  nome: string
+  tipo: string
+  url: string
+  tamanho: number | null
+  created_at: string
+}
+
+export type TipoManutencao = 'preventiva' | 'corretiva' | 'revisao' | 'troca_oleo' | 'pneus' | 'freios' | 'outros'
+
+export interface Manutencao {
+  id: string
+  veiculo_id: string
+  user_id: string
+  tipo_manutencao: TipoManutencao
+  descricao: string | null
+  data_manutencao: string
+  quilometragem: number | null
+  valor: number
+  fornecedor: string | null
+  observacoes: string | null
+  lancamento_id: string | null
+  created_at: string
+  updated_at: string
+  veiculo?: Veiculo
+}
+
+export interface Abastecimento {
+  id: string
+  veiculo_id: string
+  user_id: string
+  data_abastecimento: string
+  quilometragem: number | null
+  litros: number
+  valor_litro: number
+  valor_total: number
+  tipo_combustivel: TipoCombustivel | null
+  posto: string | null
+  observacoes: string | null
+  lancamento_id: string | null
+  created_at: string
+  updated_at: string
+  veiculo?: Veiculo
+}
